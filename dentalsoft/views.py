@@ -1,5 +1,8 @@
 from django.shortcuts import render
 from django.http import HttpResponse
+from django.contrib import auth
+from django.core.context_processors import csrf
+from charts import views
 import datetime
 from dateutil.relativedelta import relativedelta
 import json
@@ -8,10 +11,44 @@ import json
 def index(request):
     context = {
         'title': "DentalSoft",
+        'error': "",
     }
 
-    return render(request, 'login.html', context)
+    context.update(csrf(request));
+    print('login')
+    username = request.POST.get('username', '')
+    password = request.POST.get('password', '')
+    user = auth.authenticate(username=username, password=password)
+    print("CHECKED USER")
+    
+    if user is not None:
+        print("valid login")
+        auth.login(request, user)
+        return render(request, 'charts/index.html', context)
+    else :
+        print("not valid login")
+        if username != "":
+            context = {
+                'title': "DentalSoft",
+                'error': "Invalid Login",
+            }
+        return render(request, 'login.html', context)
 
+def auth_view(request):
+    username = request.POST.get('username', '')
+    password = request.POST.get('password', '')
+    user = auth.authenticate(username=username, password=password)
+
+    if user is not None:
+        auth.login(request, user)
+        return HttpResponseRedirect('/charts/index.html')
+    else:
+            context = {
+                'title': "DentalSoft ERROR",
+            }
+
+            context.update(csrf(request));
+            return HttpResponseRedirect('/charts/index.html')
 
 def parse_date_path(path):
     paths = path.split('/')
